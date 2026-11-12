@@ -11,6 +11,8 @@
     h1 { color: var(--blue); margin-bottom: .2em; }
     h2 { margin-top: 1.8em; border-left: 4px solid var(--blue); padding-left: .5em; font-size: 1.15em; }
     .subtitle { color: var(--gray); margin-top: 0; }
+    .nav { margin: .4em 0 1em; font-size: .95em; }
+    .nav a { color: var(--blue); }
     form.scrape { display: flex; gap: .6em; margin: 1.2em 0; flex-wrap: wrap; }
     form.scrape input[type=text] { flex: 1 1 32em; padding: .55em .7em; border: 1px solid #c8d0d8; border-radius: 5px; font-size: 1em; }
     form.scrape button { padding: .55em 1.6em; background: var(--blue); color: #fff; border: 0; border-radius: 5px; font-size: 1em; cursor: pointer; }
@@ -42,6 +44,7 @@
 <body>
   <h1>截标时间核对工具</h1>
   <p class="subtitle">输入与示例公告站同结构的列表网址，抓取同源分页与详情页，按项目串起公告链，核对真实截标时间。</p>
+  <p class="nav"><a href="/check">技术标匿名核查 →</a></p>
 
   <form class="scrape" method="post" action="/scrape">
     <input type="text" name="start_url" value="{{ default_start_url }}" placeholder="http://sample-site:8000/list.html" required>

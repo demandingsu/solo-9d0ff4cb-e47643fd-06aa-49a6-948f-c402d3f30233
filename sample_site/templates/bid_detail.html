@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>{{ b.code }}（{{ b.bid_id }}）技术标附件</title>
+  <style>
+    body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; color: #333; }
+    h1 { color: #2c5f8a; }
+    dl.bid-fields { display: grid; grid-template-columns: 8em 1fr; gap: .4em 1em; background: #f7f9fb; padding: 1em; border-radius: 6px; }
+    dl.bid-fields dt { font-weight: bold; color: #555; }
+    dl.bid-fields dd { margin: 0; }
+    ul.attachments { padding-left: 1.2em; }
+    ul.attachments a { color: #2c5f8a; }
+  </style>
+</head>
+<body>
+  <div class="bid" data-bid-id="{{ b.bid_id }}">
+    <h1>技术标附件</h1>
+    <dl class="bid-fields">
+      <dt>标段号</dt><dd id="section-no">{{ b.section }}</dd>
+      <dt>投标编号</dt><dd id="bid-id">{{ b.bid_id }}</dd>
+      <dt>暗标编号</dt><dd id="bid-code">{{ b.code }}</dd>
+      <dt>提交时间</dt><dd id="submit-time">{{ b.submit_time }}</dd>
+    </dl>
+    <h2>附件</h2>
+    <ul class="attachments">
+      {% for f in b.files %}
+      <li><a href="/files/{{ f }}">{{ f }}</a></li>
+      {% endfor %}
+    </ul>
+    <p><a href="/bids.html?section={{ b.section }}&page=1">返回技术标目录</a></p>
+  </div>
+</body>
+</html>

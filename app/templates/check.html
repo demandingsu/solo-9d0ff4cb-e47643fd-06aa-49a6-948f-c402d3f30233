@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>技术标匿名核查</title>
+  <style>
+    :root { --blue: #2c5f8a; --green: #1e7e34; --red: #b02a37; --amber: #9a6a00; --gray: #6c757d; }
+    * { box-sizing: border-box; }
+    body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 1080px; margin: 0 auto; padding: 1.5em 1em 3em; color: #2b2b2b; background: #fafbfc; }
+    h1 { color: var(--blue); margin-bottom: .2em; }
+    h2 { margin-top: 1.8em; border-left: 4px solid var(--blue); padding-left: .5em; font-size: 1.15em; }
+    .subtitle { color: var(--gray); margin-top: 0; }
+    .nav { margin: .4em 0 1.2em; font-size: .95em; }
+    .nav a { color: var(--blue); }
+    form.check { background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 1.1em 1.2em; margin: 1em 0; }
+    form.check label { display: block; font-weight: bold; margin: .8em 0 .3em; }
+    form.check label:first-of-type { margin-top: 0; }
+    form.check input[type=text], form.check textarea { width: 100%; padding: .55em .7em; border: 1px solid #c8d0d8; border-radius: 5px; font-size: 1em; font-family: inherit; }
+    form.check textarea { min-height: 7em; resize: vertical; }
+    form.check .hint { font-weight: normal; color: var(--gray); font-size: .88em; }
+    form.check button { margin-top: 1em; padding: .6em 2em; background: var(--blue); color: #fff; border: 0; border-radius: 5px; font-size: 1em; cursor: pointer; }
+    form.check button:hover { background: #234c6d; }
+    .banner { padding: .9em 1.1em; border-radius: 6px; margin: 1em 0; line-height: 1.7; }
+    .banner.ok { background: #e6f4ea; border: 1px solid #b7dfc2; color: var(--green); }
+    .banner.err { background: #fbe9eb; border: 1px solid #f1c2c8; color: var(--red); }
+    .banner.warn { background: #fdf3d7; border: 1px solid #f0ddaa; color: var(--amber); }
+    .banner .verdict { font-size: 1.15em; font-weight: bold; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    th, td { border: 1px solid #e2e6ea; padding: .55em .7em; text-align: left; vertical-align: top; }
+    th { background: #f0f4f8; white-space: nowrap; }
+    td.company { font-weight: bold; color: var(--red); white-space: nowrap; }
+    td.field { white-space: nowrap; }
+    .muted { color: var(--gray); font-size: .9em; }
+    a { color: var(--blue); word-break: break-all; }
+    code { background: #eef1f4; padding: .1em .35em; border-radius: 4px; }
+    .cleanup { background: #fff; border: 1px dashed #f1c2c8; border-radius: 6px; padding: .8em 1.1em; margin: 1em 0; line-height: 1.7; }
+    .empty { color: var(--gray); background: #fff; border: 1px dashed #c8d0d8; border-radius: 6px; padding: 1.2em; }
+  </style>
+</head>
+<body>
+  <h1>技术标匿名核查</h1>
+  <p class="subtitle">匿名技术标送审前核查：抓取技术标目录的同源分页与详情页，下载 ZIP 附件，检查其中 DOCX 的文件名及文档属性（creator / lastModifiedBy）是否暴露投标企业身份。</p>
+  <p class="nav"><a href="/">← 返回截标时间核对</a></p>
+
+  <form class="check" method="post" action="/check">
+    <label for="section_no">标段号</label>
+    <input type="text" id="section_no" name="section_no" value="{{ section_no }}" placeholder="如 BD-2026-01" required>
+
+    <label for="companies">该标段投标企业名称 <span class="hint">（每行一个，也可用逗号、顿号分隔）</span></label>
+    <textarea id="companies" name="companies" placeholder="华宇建设有限公司&#10;宏远工程集团" required>{{ companies_text }}</textarea>
+
+    <label for="start_url">技术标目录 URL</label>
+    <input type="text" id="start_url" name="start_url" value="{{ start_url }}" placeholder="http://sample-site:8000/bids.html?section=BD-2026-01&page=1" required>
+
+    <button type="submit">开始核查</button>
+  </form>
+
+  {% if error %}
+  <div class="banner err">{{ error }}</div>
+  {% endif %}
+
+  {% if result %}
+  <h2>核查结论</h2>
+  {% if result.verdict == "可送审" %}
+  <div class="banner ok">
+    <span class="verdict">✔ 可送审</span><br>
+    标段 <strong>{{ section_no }}</strong> 的全部 {{ result.zip_count }} 份 ZIP 附件（{{ result.docx_count }} 个 DOCX）均已核查完毕，
+    未发现 {{ companies|length }} 家投标企业的身份痕迹，可送匿名评审。
+  </div>
+  {% elif result.verdict == "发现身份痕迹" %}
+  <div class="banner err">
+    <span class="verdict">✘ 发现身份痕迹：{{ result.hits|length }} 处命中</span><br>
+    标段 <strong>{{ section_no }}</strong> 的技术标附件中存在可能暴露投标企业身份的内容，<strong>暂不可送审</strong>，请按下表清理后重新核查。
+  </div>
+  {% else %}
+  <div class="banner warn">
+    <span class="verdict">⚠ 无法核定：{{ result.problems|length }} 个网址存在问题</span><br>
+    标段 <strong>{{ section_no }}</strong> 的部分页面或附件未能完成核查（问题清单见下），结论无法核定。
+    {% if result.hits %}已发现的 {{ result.hits|length }} 处命中仍然有效，请一并处理。{% endif %}
+    请解决问题后重新核查。
+  </div>
+  {% endif %}
+
+  <p class="muted">
+    核查范围：{{ result.list_pages|length }} 个目录页、{{ result.detail_pages|length }} 个详情页、
+    {{ result.zip_count }} 份 ZIP 附件、{{ result.docx_count }} 个 DOCX
+    {% if elapsed is not none %}，耗时 {{ "%.1f"|format(elapsed) }} 秒{% endif %}。
+    比对企业 {{ companies|length }} 家：{{ companies|join("、") }}。
+  </p>
+
+  {% if result.hits %}
+  <h2>命中清单（{{ result.hits|length }} 处）</h2>
+  <table>
+    <thead>
+      <tr><th>企业名称</th><th>ZIP 内文件</th><th>字段</th><th>字段内容</th><th>来源</th></tr>
+    </thead>
+    <tbody>
+      {% for h in result.hits %}
+      <tr>
+        <td class="company">{{ h.company }}</td>
+        <td><code>{{ h.file }}</code></td>
+        <td class="field">{{ h.field }}</td>
+        <td>{{ h.value }}</td>
+        <td>
+          附件：<a href="{{ h.zip_url|public_url }}" target="_blank" rel="noopener">{{ h.zip_url|public_url }}</a>
+          {% if h.page_url %}<br>详情页：<a href="{{ h.page_url|public_url }}" target="_blank" rel="noopener">{{ h.page_url|public_url }}</a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="cleanup">
+    <strong>清理提示：</strong>请对上述文件清除身份痕迹后重新打包上传——
+    重命名 DOCX 文件（去除企业名称），并在 Office/WPS 中通过
+    “文件 → 信息 → 检查问题 → 检查文档 → 文档属性和个人信息”删除
+    <code>creator</code>（作者）与 <code>lastModifiedBy</code>（最后修改者）等属性，
+    然后回到本页重新核查，确认结论为“可送审”后再送审。
+  </div>
+  {% endif %}
+
+  {% if result.problems %}
+  <h2>问题网址（{{ result.problems|length }} 个，无法核定）</h2>
+  <table>
+    <thead>
+      <tr><th>问题网址</th><th>所在详情页</th><th>原因</th></tr>
+    </thead>
+    <tbody>
+      {% for p in result.problems %}
+      <tr>
+        <td><a href="{{ p.url|public_url }}" target="_blank" rel="noopener">{{ p.url|public_url }}</a></td>
+        <td>{% if p.page_url %}<a href="{{ p.page_url|public_url }}" target="_blank" rel="noopener">{{ p.page_url|public_url }}</a>{% else %}—{% endif %}</td>
+        <td>{{ p.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if not result.hits and not result.problems %}
+  <div class="empty">未发现身份痕迹，且无问题网址。</div>
+  {% endif %}
+  {% endif %}
+</body>
+</html>

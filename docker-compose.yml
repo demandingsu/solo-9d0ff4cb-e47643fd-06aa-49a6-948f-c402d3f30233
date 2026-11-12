@@ -10,6 +10,14 @@ services:
       DB_PATH: /data/app.db
       # 应用容器内部访问示例站的地址（默认抓取网址）
       DEFAULT_START_URL: http://sample-site:8000/list.html?page=1
+      # 技术标匿名核查表单默认值
+      DEFAULT_CHECK_URL: http://sample-site:8000/bids.html?section=BD-2026-01&page=1
+      DEFAULT_CHECK_SECTION: BD-2026-01
+      DEFAULT_CHECK_COMPANIES: |-
+        华宇建设有限公司
+        宏远工程集团
+        中建科工股份有限公司
+        恒信建设集团
       # 把结果页中的内部网址改写成浏览器可访问的地址
       URL_REWRITE_FROM: http://sample-site:8000
       URL_REWRITE_TO: http://localhost:8080

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>技术标附件目录{% if section %}（{{ section }}）{% endif %} - 第 {{ page }} 页</title>
+  <style>
+    body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; color: #333; }
+    h1 { border-bottom: 2px solid #2c5f8a; padding-bottom: .3em; }
+    ul.bid-list { list-style: none; padding: 0; }
+    ul.bid-list li { padding: .6em .2em; border-bottom: 1px solid #e0e0e0; }
+    ul.bid-list a { color: #2c5f8a; text-decoration: none; }
+    ul.bid-list a:hover { text-decoration: underline; }
+    .pub { color: #888; font-size: .9em; margin-left: 1em; }
+    nav.pagination { margin: 1.2em 0; }
+    nav.pagination a, nav.pagination span.current { margin-right: .6em; padding: .2em .5em; }
+    nav.pagination span.current { background: #2c5f8a; color: #fff; border-radius: 3px; }
+    footer { color: #999; font-size: .85em; margin-top: 2em; border-top: 1px solid #eee; padding-top: .8em; }
+  </style>
+</head>
+<body>
+  <h1>技术标附件目录{% if section %}（标段 {{ section }}）{% endif %}</h1>
+  <ul class="bid-list">
+    {% for b in items %}
+    <li>
+      <a href="/bid/{{ b.bid_id }}.html">{{ b.code }}（{{ b.bid_id }}）</a>
+      <span class="pub">提交时间 {{ b.submit_time }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <nav class="pagination">
+    {% for p in pages %}
+      {% if p == page %}<span class="current">{{ p }}</span>{% else %}<a href="/bids.html?section={{ section }}&page={{ p }}">{{ p }}</a>{% endif %}
+    {% endfor %}
+    {% if page < total_pages %}<a href="/bids.html?section={{ section }}&page={{ page + 1 }}" rel="next">下一页</a>{% endif %}
+  </nav>
+  <footer>
+    示例公告站 · 技术标附件区 · 投标详情故障注入（{{ bid_fail_id }} 返回 500）：
+    <a href="/admin/bidfail?on=1">开启</a> / <a href="/admin/bidfail?on=0">关闭</a>
+    （当前：{{ "开" if bid_fail_on else "关" }}） ·
+    <a href="/list.html?page=1">公告列表</a>
+  </footer>
+</body>
+</html>

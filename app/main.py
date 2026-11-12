@@ -5,6 +5,7 @@
 """
 
 import os
+import time
 from contextlib import asynccontextmanager
 from urllib.parse import quote
 
@@ -13,10 +14,15 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 import analysis
+import bidcheck
 import db
 import scraper
 
 DEFAULT_START_URL = os.environ.get("DEFAULT_START_URL", "http://sample-site:8000/list.html?page=1")
+# 技术标匿名核查表单的默认值
+DEFAULT_CHECK_URL = os.environ.get("DEFAULT_CHECK_URL", "http://sample-site:8000/bids.html?section=BD-2026-01&page=1")
+DEFAULT_CHECK_SECTION = os.environ.get("DEFAULT_CHECK_SECTION", "BD-2026-01")
+DEFAULT_CHECK_COMPANIES = os.environ.get("DEFAULT_CHECK_COMPANIES", "")
 # 展示层网址改写：容器内部地址 → 浏览器可访问地址（可选）
 URL_REWRITE_FROM = os.environ.get("URL_REWRITE_FROM", "")
 URL_REWRITE_TO = os.environ.get("URL_REWRITE_TO", "")
@@ -86,3 +92,55 @@ def do_scrape(start_url: str = Form(...)):
         f"{len(result.detail_pages)} 个详情页，共 {len(result.announcements)} 条公告。"
     )
     return RedirectResponse(f"/?msg={quote(msg)}", status_code=303)
+
+
+@app.get("/check", response_class=HTMLResponse)
+def check_form(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "check.html",
+        {
+            "start_url": DEFAULT_CHECK_URL,
+            "section_no": DEFAULT_CHECK_SECTION,
+            "companies_text": DEFAULT_CHECK_COMPANIES,
+            "result": None,
+            "error": "",
+            "elapsed": None,
+        },
+    )
+
+
+@app.post("/check", response_class=HTMLResponse)
+def do_check(
+    request: Request,
+    section_no: str = Form(...),
+    companies: str = Form(...),
+    start_url: str = Form(...),
+):
+    section_no = section_no.strip()
+    start_url = start_url.strip()
+    company_list = bidcheck.parse_companies(companies)
+
+    result = None
+    error = ""
+    elapsed = None
+    if not company_list:
+        error = "请至少填写一个投标企业名称（每行一个）。"
+    else:
+        t0 = time.monotonic()
+        result = bidcheck.run_check(start_url, company_list)
+        elapsed = time.monotonic() - t0
+
+    return templates.TemplateResponse(
+        request,
+        "check.html",
+        {
+            "start_url": start_url,
+            "section_no": section_no,
+            "companies_text": companies,
+            "companies": company_list,
+            "result": result,
+            "error": error,
+            "elapsed": elapsed,
+        },
+    )
